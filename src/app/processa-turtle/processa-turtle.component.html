@@ -1,0 +1,19 @@
+<div class="row">
+    <div class="col">
+        <h1>Processa entrada turtle</h1>  
+    </div>
+    <div class="col">
+        <button type="button" (click)="processar()" class="btn btn-primary float-right">Processar</button>
+    </div>
+</div>
+<form [formGroup]="formGroup">
+    <div class="row">
+        <div class="col-12">
+            <div class="form-group">
+              <label for="turtle"></label>
+              <textarea class="form-control" formControlName="turtleText" name="turtle" id="turtle" rows="10"></textarea>
+            </div>
+        </div>
+    </div>
+</form>
+
