@@ -16,4 +16,44 @@
         </div>
     </div>
 </form>
-
+<div class="card" *ngIf="prefixos">
+    <div class="card-body">
+        <h5 class="card-title">Prefixos</h5>
+        <div *ngFor="let recipient of prefixos | keyvalue">
+            {{recipient.key}} : {{recipient.value}}
+        </div>
+    </div>
+</div>
+<div class="card" *ngIf="triplas && triplas.length > 0">
+    <div class="card-body">
+        <h5 class="card-title">Triplas</h5>
+        <ng-container *ngFor="let tripla of triplas">
+            <div class="d-flex flex-row">
+                <div class="p-2">
+                    {{tripla.sujeito}}
+                </div>
+                <div class="p-2">
+                    {{tripla.predicado}}
+                </div>
+                <div class="p-2">
+                    {{tripla.objeto}}
+                </div>
+            </div>
+        </ng-container>
+    </div>
+</div>
+<div class="card" *ngIf="triplas && triplas.length > 0">
+    <div class="card-body">
+        <h5 class="card-title">Types</h5>
+        <ng-container *ngFor="let tipo of tipos | keyvalue">
+            <div class="d-flex flex-row">
+                <div class="p-2">
+                    {{tipo.key}}
+                </div>
+                <div class="p-2">
+                    {{tipo.value}}
+                </div>
+            </div>
+        </ng-container>
+    </div>
+</div>
