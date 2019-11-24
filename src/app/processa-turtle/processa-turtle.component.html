@@ -16,17 +16,17 @@
         </div>
     </div>
 </form>
-<div class="card" *ngIf="prefixos">
-    <div class="card-body">
-        <h5 class="card-title">Prefixos</h5>
+
+<ngb-tabset>
+    <ngb-tab title="Prefixos">
+      <ng-template ngbTabContent>
         <div *ngFor="let recipient of prefixos | keyvalue">
             {{recipient.key}} : {{recipient.value}}
         </div>
-    </div>
-</div>
-<div class="card" *ngIf="triplas && triplas.length > 0">
-    <div class="card-body">
-        <h5 class="card-title">Triplas</h5>
+      </ng-template>
+    </ngb-tab>
+    <ngb-tab title="Triplas">
+      <ng-template ngbTabContent>
         <ng-container *ngFor="let tripla of triplas">
             <div class="d-flex flex-row">
                 <div class="p-2">
@@ -40,11 +40,10 @@
                 </div>
             </div>
         </ng-container>
-    </div>
-</div>
-<div class="card" *ngIf="triplas && triplas.length > 0">
-    <div class="card-body">
-        <h5 class="card-title">Types</h5>
+      </ng-template>
+    </ngb-tab>
+    <ngb-tab title="Tipos">
+      <ng-template ngbTabContent>
         <ng-container *ngFor="let tipo of tipos | keyvalue">
             <div class="d-flex flex-row">
                 <div class="p-2">
@@ -55,5 +54,22 @@
                 </div>
             </div>
         </ng-container>
-    </div>
-</div>
+      </ng-template>
+    </ngb-tab>
+    <ngb-tab title="Relações Semânticas">
+      <ng-template ngbTabContent>
+        <ul>
+            <li *ngFor="let tipo of (relacoesSemanticas$ | async) | keyvalue">
+                <div class="d-flex flex-row">
+                    <div class="p-2">
+                        {{tipo.key}}
+                    </div>
+                    <div *ngFor="let connection of tipo.value" class="p-2">
+                        {{connection.predicado}} {{connection.class}}
+                    </div>
+                </div>
+            </li>
+        </ul>
+      </ng-template>
+    </ngb-tab>
+</ngb-tabset>
