@@ -2,7 +2,6 @@ import { UriInformationService } from './../uri-information.service';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms'
 import { Tripla } from '../objects/tripla'
-import { HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 @Component({
@@ -31,25 +30,25 @@ export class ProcessaTurtleComponent implements OnInit {
   tiposInicializadosSubject = new BehaviorSubject<number>(1);
   tiposInicializados$ = this.tiposInicializadosSubject.asObservable();
   relacoesSemanticas$ = this.tiposInicializados$.pipe(map((num)=> {
-    let relacoesSemanticas = {}
+    let relacoesSemanticas = new Map<string, any[]>()
     if (num === 0) {
       this.triplas.forEach((tripla) => {
         if(tripla.predicado === 'a' || tripla.predicado === 'rdf:type') {
           return;
         }
-        if (!relacoesSemanticas[this.tipos[tripla.sujeito]]) {
-          relacoesSemanticas[this.tipos[tripla.sujeito]] = []
+        if (!relacoesSemanticas.has(this.tipos[tripla.sujeito])) {
+          relacoesSemanticas.set(this.tipos[tripla.sujeito], [])
         } 
         if (!this.tipos[tripla.objeto]) {
           this.tipos[tripla.objeto] = 'não foi possível deduzir o tipo'
         }
-        if (!relacoesSemanticas[this.tipos[tripla.sujeito]].find((obj) => obj.predicado === tripla.predicado && obj.class === this.tipos[tripla.objeto]))
-          relacoesSemanticas[this.tipos[tripla.sujeito]].push({predicado: tripla.predicado, class: this.tipos[tripla.objeto]})
+        if (!relacoesSemanticas.get(this.tipos[tripla.sujeito]).find((obj) => obj.predicado === tripla.predicado && obj.class === this.tipos[tripla.objeto]))
+          relacoesSemanticas.get(this.tipos[tripla.sujeito]).push({predicado: tripla.predicado, class: this.tipos[tripla.objeto]})
       })
     }
     return relacoesSemanticas;
   }));
-
+  
   constructor(private formBuilder: FormBuilder,
               private uriInfo: UriInformationService) { 
   }
@@ -59,6 +58,7 @@ export class ProcessaTurtleComponent implements OnInit {
       turtleText: this.textoInicial
     })
     this.uriInfo.testConnection2().subscribe((rsp)=> console.log(rsp))
+    
   }
 
   processar() {

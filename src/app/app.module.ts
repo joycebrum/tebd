@@ -8,14 +8,13 @@ import { HomeComponent } from './home/home.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule }    from '@angular/common/http';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
-import { LineExampleComponent } from './line-example/line-example.component';
-
+import { NgxGraphModule } from '@swimlane/ngx-graph';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 @NgModule({
   declarations: [
     AppComponent,
     ProcessaTurtleComponent,
     HomeComponent,
-    LineExampleComponent
   ],
   imports: [
     BrowserModule,
@@ -23,7 +22,9 @@ import { LineExampleComponent } from './line-example/line-example.component';
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,
-    NgbModule
+    NgbModule,
+    NgxGraphModule,
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
