@@ -2,7 +2,7 @@ import { UriInformationService } from './../uri-information.service';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms'
 import { Tripla } from '../objects/tripla'
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 @Component({
   selector: 'app-processa-turtle',
@@ -29,7 +29,11 @@ export class ProcessaTurtleComponent implements OnInit {
 
   tiposInicializadosSubject = new BehaviorSubject<number>(1);
   tiposInicializados$ = this.tiposInicializadosSubject.asObservable();
-  relacoesSemanticas$ = this.tiposInicializados$.pipe(map((num)=> {
+  
+  mesmoSujeito = false
+  mesmoPredicado = false
+  triplaAnterior = new Tripla()
+  relacoesSemanticas$: Observable<Map<string, any[]>> = this.tiposInicializados$.pipe(map((num)=> {
     let relacoesSemanticas = new Map<string, any[]>()
     if (num === 0) {
       this.triplas.forEach((tripla) => {
@@ -48,6 +52,44 @@ export class ProcessaTurtleComponent implements OnInit {
     }
     return relacoesSemanticas;
   }));
+
+  nodes$ = this.relacoesSemanticas$.pipe(map((relacoes) => {
+    const nodes = []
+    if (relacoes) {
+      relacoes.forEach((value, key) => {
+        if (!nodes.find((node) => node.id == key)) {
+          nodes.push({id: key, label: key})
+        }
+        if (value) {
+          value.forEach((element) => {
+            if(!nodes.find((node) => node.id == element.class)) {
+              nodes.push({id: element.class, label: element.class})
+            }
+          })
+        }
+      });
+    }
+    return nodes
+  }))
+
+  links$ = this.relacoesSemanticas$.pipe(map((relacoes) => {
+    const links = []
+    let id = 'a'
+    if (relacoes) {
+      relacoes.forEach((value, key) => {
+        if(value) {
+          value.forEach((element) => {
+            links.push({id: id,
+            source: key,
+            target: element.class,
+            label: element.predicado})
+          id = id + 'a'
+          })
+        }
+      })
+    }
+    return links
+  }))
   
   constructor(private formBuilder: FormBuilder,
               private uriInfo: UriInformationService) { 
@@ -64,6 +106,9 @@ export class ProcessaTurtleComponent implements OnInit {
   processar() {
     //debugger
     this.prefixos.clear()
+    this.mesmoSujeito = false
+    this.mesmoPredicado = false
+    this.triplas = []
     const rows: string[] = this.turtleText.value.split('\n');
     for (let row of rows) {
       if (row.length == 0) {
@@ -85,7 +130,13 @@ export class ProcessaTurtleComponent implements OnInit {
       tripla.updateUri(this.prefixos)
       if (tripla.predicado === 'a' || tripla.predicado === 'rdf:type') {
         this.tipos[tripla.sujeito] = tripla.objeto
-      }
+      } else if (tripla.objeto.endsWith("^xsd:integer")) {
+        this.tipos[tripla.objeto] = "integer"
+      } else if (tripla.objeto.endsWith("^xsd:string")) {
+        this.tipos[tripla.objeto] = "string"
+      } else if (tripla.objeto.startsWith("\"")) {
+        this.tipos[tripla.objeto] = "literal"
+      } 
     })
     this.triplas.forEach((tripla) => {
       if (!this.tipos[tripla.sujeito]) {
@@ -95,7 +146,8 @@ export class ProcessaTurtleComponent implements OnInit {
           if(resp && resp.results && resp.results.bindings && resp.results.bindings.length > 0) {
               this.tipos[tripla.sujeito] = resp.results.bindings[0].tipo.value;
           }
-        })
+        }, 
+        (error) => this.tiposInicializadosSubject.next(this.tiposInicializadosSubject.getValue() - 1))
       }
       if (!this.tipos[tripla.objeto]) {
         this.tiposInicializadosSubject.next(this.tiposInicializadosSubject.getValue() + 1)
@@ -104,7 +156,8 @@ export class ProcessaTurtleComponent implements OnInit {
           if(resp && resp.results && resp.results.bindings && resp.results.bindings.length > 0) {
             this.tipos[tripla.objeto] = resp.results.bindings[0].tipo.value;
           }
-        })
+        },
+        (error) => this.tiposInicializadosSubject.next(this.tiposInicializadosSubject.getValue() - 1))
       }
     })
     this.tiposInicializadosSubject.next(this.tiposInicializadosSubject.getValue() - 1)
@@ -125,40 +178,38 @@ export class ProcessaTurtleComponent implements OnInit {
     this.prefixos.set(assoc[0].trim(), assoc[1].trim());
   }
   private updateTriplas(row) {
-    const termos: string[] = row.split(' ').map((termo) => termo.trim()).filter((str) => str.length > 0)
-    let mesmoSujeito = false
-    let mesmoPredicado = false
-    const triplaAnterior = new Tripla()
+    let termos: string[] = row.split(' ').map((termo) => termo.trim()).filter((str) => str.length > 0)
+    termos = this.trataLiteral(termos)
     let i = 0
     while (i < termos.length){
       const tripla = new Tripla()
-      if(mesmoSujeito) {
-        tripla.sujeito = triplaAnterior.sujeito
+      if(this.mesmoSujeito) {
+        tripla.sujeito = this.triplaAnterior.sujeito
       } else {
         tripla.sujeito = termos[i]
-        triplaAnterior.sujeito = tripla.sujeito
+        this.triplaAnterior.sujeito = tripla.sujeito
         i++
       }
       
-      if(mesmoPredicado) {
-        tripla.predicado = triplaAnterior.predicado
+      if(this.mesmoPredicado) {
+        tripla.predicado = this.triplaAnterior.predicado
       } else {
         tripla.predicado = termos[i]
-        triplaAnterior.predicado = tripla.predicado
+        this.triplaAnterior.predicado = tripla.predicado
         i++
       }
       
       if (termos[i].charAt(termos[i].length - 1) == ',') {
-        mesmoPredicado = true
-        mesmoSujeito = true
+        this.mesmoPredicado = true
+        this.mesmoSujeito = true
         tripla.objeto = termos[i].substr(0, termos[i].length - 1).trim()
       } else if (termos[i].charAt(termos[i].length - 1) == ';') {
-        mesmoPredicado = false
-        mesmoSujeito = true
+        this.mesmoPredicado = false
+        this.mesmoSujeito = true
         tripla.objeto = termos[i].substr(0, termos[i].length - 1).trim()
       } else if (termos[i].charAt(termos[i].length - 1) == '.') {
-        mesmoPredicado = false
-        mesmoSujeito = false
+        this.mesmoPredicado = false
+        this.mesmoSujeito = false
         tripla.objeto = termos[i].substr(0, termos[i].length - 1).trim()
       } else {
         tripla.objeto = termos[i]
@@ -167,6 +218,28 @@ export class ProcessaTurtleComponent implements OnInit {
       i++
     }
   }
-
-
+  private fimLiteral(str: string): boolean {
+    if (!str || str.length === 0) return false;
+    if(str.charAt(str.length - 1) === '.' || str.charAt(str.length - 1) === ',' || str.charAt(str.length - 1) === ';') {
+      str = str.substring(0, str.length - 1)
+    }
+    return str.endsWith('\"') || str.endsWith('\"^xsd:string') || str.endsWith('\"^xsd:integer')
+  }
+  private trataLiteral(termos: string[]) {
+    const termosTratados = []
+    let i = 0
+    for(i = 0; i < termos.length; i++) {
+      let temp = termos[i]
+      if (termos[i].startsWith('\"') && !this.fimLiteral(termos[i])) {
+        i = i + 1
+        while(i < termos.length && !this.fimLiteral(termos[i])) {
+          temp += ' '+ termos[i]
+          i = i + 1
+        }
+        temp += ' ' + termos[i]
+      }
+      termosTratados.push(temp)
+    }
+    return termosTratados
+  }
 }

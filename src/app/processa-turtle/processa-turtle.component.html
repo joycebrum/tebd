@@ -59,22 +59,55 @@
     <ngb-tab title="Relações Semânticas">
       <ng-template ngbTabContent>
         <ul>
-            <li *ngFor="let tipo of (relacoesSemanticas$ | async) | keyvalue">
-                <div class="d-flex flex-row">
-                    <div class="p-2">
-                        {{tipo.key}}
+            <ng-container *ngFor="let tipo of (relacoesSemanticas$ | async) | keyvalue">
+                <li *ngFor="let connection of tipo.value">
+                    <div  class="d-flex flex-row">
+                        <div class="p-2">
+                            {{tipo.key}} {{connection.predicado}} {{connection.class}}
+                        </div>
                     </div>
-                    <div *ngFor="let connection of tipo.value" class="p-2">
-                        {{connection.predicado}} {{connection.class}}
-                    </div>
-                </div>
-            </li>
+                </li>
+            </ng-container>
         </ul>
       </ng-template>
     </ngb-tab>
     <ngb-tab title="Grafo">
         <ng-template ngbTabContent>
+            <ngx-graph
+            class="chart-container"
+            [view]="[1200, 550]"
+            [links]="links$ | async"
+            [nodes]="nodes$ | async"
+            layout="dagreCluster"
+          >
+            <ng-template #defsTemplate>
+              <svg:marker id="arrow" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="4" markerHeight="4" orient="auto">
+                <svg:path d="M0,-5L10,0L0,5" class="arrow-head" />
+              </svg:marker>
+            </ng-template>
           
+            <ng-template #nodeTemplate let-node>
+              <svg:g class="node" [ngbTooltip]="node.label" placement="top">
+                <svg:rect
+                  [attr.width]="node.dimension.width"
+                  [attr.height]="node.dimension.height"
+                  [attr.fill]="node.data.color"
+                />
+                <svg:text alignment-baseline="central" [attr.x]="10" [attr.y]="node.dimension.height / 2">
+                  {{node.label}}
+                </svg:text>
+              </svg:g>
+            </ng-template>
+          
+            <ng-template #linkTemplate let-link>
+                <svg:g class="edge">
+                    <svg:path class="line" stroke-width="2" marker-end="url(#arrow)"></svg:path>
+                    <svg:text alignment-baseline="central" [attr.x]="link.midPoint.x" [attr.y]="link.midPoint.y">
+                    {{link.label}}
+                    </svg:text>
+                </svg:g>
+            </ng-template>
+          </ngx-graph>
         </ng-template>
     </ngb-tab>
 </ngb-tabset>
